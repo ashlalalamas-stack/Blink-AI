@@ -14,6 +14,12 @@ BLINK is a minimal chat prototype with a Fastify server and static web client.
    ```
 3. Open `web/index.html` in your browser.
 
+### Python code runner
+
+The web client includes a **Run Py** button. Enter Python code in the text box
+and click it to execute the snippet locally on the server. Output (stdout and
+stderr) is returned as a local response.
+
 ## Privacy
 
 Enable **Privacy Mode** in the web client to force all requests to the local

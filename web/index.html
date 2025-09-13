@@ -20,11 +20,13 @@
 <label><input type="checkbox" id="privacy"/> Privacy mode</label>
 <textarea id="text" rows="2"></textarea>
 <button id="send">Send</button>
+<button id="runpy">Run Py</button>
 </div>
 <script>
 const chat = document.getElementById('chat');
 const text = document.getElementById('text');
 const send = document.getElementById('send');
+const runpy = document.getElementById('runpy');
 const privacy = document.getElementById('privacy');
 let messages = [];
 function append(role, content, local){
@@ -49,6 +51,21 @@ send.onclick = async () => {
   const data = await res.json();
   messages.push({role:'assistant', content:data.reply});
   append('assistant', data.reply, data.local);
+};
+
+runpy.onclick = async () => {
+  const code = text.value.trim();
+  if(!code) return;
+  append('user', code);
+  text.value='';
+  const res = await fetch('/api/python', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({code})
+  });
+  const data = await res.json();
+  const out = (data.stdout || '') + (data.stderr || '');
+  append('assistant', out, true);
 };
 </script>
 </body>
