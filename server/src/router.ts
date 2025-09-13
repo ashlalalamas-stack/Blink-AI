@@ -71,19 +71,19 @@ async function callProvider(p: Provider, messages: Message[]): Promise<string | 
   }
 }
 
-export async function routeChat(messages: Message[], forceLocal: boolean, log: FastifyBaseLogger): Promise<{reply: string; local: boolean}> {
+export async function routeChat(messages: Message[], forceLocal: boolean, log: FastifyBaseLogger): Promise<{reply: string; local: boolean; verified: boolean}> {
   if(forceLocal){
     const local = info('local_inf');
     const reply = local ? await callProvider(local, messages) : null;
-    return { reply: reply || '', local: true };
+    return { reply: reply || '', local: true, verified: false };
   }
   for(const id of ORDER){
     const p = info(id);
     if(!p) continue;
     const reply = await callProvider(p, messages);
-    if(reply) return {reply, local:false};
+    if(reply) return {reply, local:false, verified:false};
   }
   const local = info('local_inf');
   const reply = (local ? await callProvider(local, messages) : '') || '';
-  return {reply, local:true};
+  return {reply, local:true, verified:false};
 }

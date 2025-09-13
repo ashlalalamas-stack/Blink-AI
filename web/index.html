@@ -32,10 +32,12 @@ const send=document.getElementById('send');
 const runpy=document.getElementById('runpy');
 const privacy=document.getElementById('privacy');
 let messages=[];
-function append(role,content,local){
+function append(role,content,local,verified){
   const div=document.createElement('div');
   div.className='msg '+role;
-  const icon=local===undefined?'':(local?'\uD83D\uDEE1\uFE0F':'\uD83C\uDF10');
+  let icon='';
+  if(verified) icon='\u2714\uFE0F';
+  else if(local!==undefined) icon=local?'\uD83D\uDEE1\uFE0F':'\uD83C\uDF10';
   div.textContent=(role==='user'?'' : icon+' ')+content;
   chat.appendChild(div);
   chat.scrollTop=chat.scrollHeight;
@@ -49,7 +51,7 @@ send.onclick=async()=>{
   const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages,privacyMode:privacy.checked})});
   const data=await res.json();
   messages.push({role:'assistant',content:data.reply});
-  append('assistant',data.reply,data.local);
+  append('assistant',data.reply,data.local,data.verified);
 };
 runpy.onclick=async()=>{
   const code=text.value.trim();
@@ -59,7 +61,7 @@ runpy.onclick=async()=>{
   const res=await fetch('/api/python',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
   const data=await res.json();
   const out=(data.stdout||'')+(data.stderr||'');
-  append('assistant',out,true);
+  append('assistant',out,true,false);
 };
 </script>
 </body>

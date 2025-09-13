@@ -2,6 +2,31 @@
 
 BLINK is a minimal chat prototype with a Fastify server and static web client.
 
+## Overview
+
+* Chat-first assistant that stays on-device unless online help improves quality.
+* Routing order: **oss120b_api → mistral 3.1 → gpt-5 thinking high → local**.
+* Allowlist-only providers with region‑pinned egress (AU by default).
+
+### UX
+
+* Single clean conversation with tiny glyphs: **shield** (private), **globe** (online), **check** (verified).
+* Settings include **Privacy Mode** and optional **Cloud Sync** for Plus users.
+
+### Capabilities
+
+* Chat, browse with citations, run local Python, parse files (PDF/CSV/Docs), basic vision and image generation.
+* Local tier handles summaries, Q&A, OCR, and light coding fully offline.
+
+### Privacy
+
+* Nothing leaves the device unless online help is needed and allowed.
+* One-tap purge and no training on user data unless opted in.
+
+### Goal
+
+Beat ChatGPT on everyday speed and reliability while matching breadth—without clutter.
+
 ## Quickstart
 
 1. Copy `server/.env.example` to `server/.env` and fill in provider keys.

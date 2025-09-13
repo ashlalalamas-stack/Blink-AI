@@ -19,9 +19,8 @@ app.post('/api/chat', async (req, res) => {
   const body = req.body as any;
   const messages = Array.isArray(body?.messages) ? body.messages : [];
   const privacyMode = !!body?.privacyMode;
-  const offline = !!body?.offline;
-  const result = await routeChat(messages, privacyMode || offline, req.log);
-  return { reply: result.reply, local: result.local };
+  const result = await routeChat(messages, privacyMode, req.log);
+  return { reply: result.reply, local: result.local, verified: result.verified };
 });
 
 app.post('/api/python', async (req, res) => {
