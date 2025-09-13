@@ -1,34 +1,58 @@
-# BLINK v0.1
+# BLINK
 
-BLINK is a minimal chat prototype with a Fastify server and static web client.
+BLINK is an open-source chat client and server prototype that aims to offer a
+polished alternative to hosted assistants.
 
-## Quickstart
+## Features
 
-1. Copy `server/.env.example` to `server/.env` and fill in provider keys.
-2. Install and build the server:
+- Fastify backend with optional remote provider integration
+- Lightweight web UI with privacy mode
+- Execute Python snippets on the server via **Run Py**
+- macOS binary build and automated release workflow
+
+## Getting Started
+
+### Server
+
+1. Copy `server/.env.example` to `server/.env` and supply provider keys.
+2. Install dependencies and start the server:
+
    ```bash
    cd server
    npm install
    npm run build
    npm start
    ```
-3. Open `web/index.html` in your browser.
 
-### Python code runner
+### Client
 
-The web client includes a **Run Py** button. Enter Python code in the text box
-and click it to execute the snippet locally on the server. Output (stdout and
-stderr) is returned as a local response.
+Open `web/index.html` in your browser to begin chatting.
+
+### macOS Build
+
+Create a standalone macOS executable with:
+
+```bash
+cd server
+npm install
+npm run build:mac
+```
+
+The binary `blink-macos` will be placed in the `server/` directory.
+
+## Releasing
+
+Pushing a tag such as `v1.0.0` runs the workflow defined in
+`.github/workflows/release.yml` to build the macOS binary and attach it to a
+GitHub release.
 
 ## Privacy
 
-Enable **Privacy Mode** in the web client to force all requests to the local
-model. When privacy mode is off, the server may contact remote providers but
-never shares model names or quotas with the browser. Region is pinned to `AU`.
+Enable **Privacy** in the web client to force all requests through the local
+model only. When disabled, the server may contact remote providers but never
+shares model names or quotas with the browser; region is pinned to `AU`.
 
-## Plans
-
-- **Free** – local-only.
-- **Plus** – $8/month for access to online providers.
+## License
 
 Licensed under the [MIT License](LICENSE).
+
