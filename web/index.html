@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>BLINK v0.1</title>
+<style>
+ body { background:#111; color:#eee; font-family: sans-serif; display:flex; flex-direction:column; height:100vh; margin:0; }
+ #chat { flex:1; padding:1rem; overflow-y:auto; }
+ #input { display:flex; padding:1rem; gap:0.5rem; }
+ textarea { flex:1; background:#222; color:#eee; border:1px solid #444; }
+ button { background:#333; color:#eee; border:1px solid #555; }
+ label { display:flex; align-items:center; gap:0.25rem; }
+ .msg { margin-bottom:0.5rem; }
+ .assistant { color:#aaffaa; }
+ sup a { color:#88aaff; text-decoration:none; margin-left:2px; }
+ #settings { display:none; padding:0.5rem 1rem; border-top:1px solid #333; }
+</style>
+</head>
+<body>
+<div id="chat"></div>
+<div id="settings">
+ <label id="syncOpt" style="display:none"><input type="checkbox" id="sync"/> Cloud Sync</label>
+ <input type="password" id="pass" placeholder="Passphrase" style="display:none; background:#222; color:#eee; border:1px solid #444;"/>
+</div>
+<div id="input">
+<label><input type="checkbox" id="privacy"/> Privacy mode</label>
+<textarea id="text" rows="2"></textarea>
+<button id="send">Send</button>
+<button id="opts">⚙️</button>
+</div>
+<script>
+const chat = document.getElementById('chat');
+const text = document.getElementById('text');
+const send = document.getElementById('send');
+const privacy = document.getElementById('privacy');
+const opts = document.getElementById('opts');
+const settings = document.getElementById('settings');
+const syncOpt = document.getElementById('syncOpt');
+const syncBox = document.getElementById('sync');
+const passBox = document.getElementById('pass');
+let isPlus = false;
+let messages = [];
+fetch('/config').then(r=>r.json()).then(d=>{ if(d.plus){ isPlus=true; syncOpt.style.display='flex'; }});
+opts.onclick=()=>{settings.style.display = settings.style.display==='none'? 'block':'none';};
+syncBox.onchange=()=>{passBox.style.display = syncBox.checked? 'block':'none';};
+
+function createAssistantDiv(){
+  const div=document.createElement('div');
+  div.className='msg assistant';
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
+  return div;
+}
+function appendUser(content){
+  const div=document.createElement('div');
+  div.className='msg user';
+  div.textContent='> '+content;
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
+}
+
+async function encrypt(pass, data){
+  const enc=new TextEncoder();
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial=await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:100000, hash:'SHA-256'}, keyMaterial,{name:'AES-GCM', length:256}, false, ['encrypt']);
+  const cipher=await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, enc.encode(data));
+  const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));
+  return {cipher:b64(cipher), iv:b64(iv), salt:b64(salt)};
+}
+async function sync(){
+  if(!isPlus || !syncBox.checked) return;
+  const pass = passBox.value;
+  if(!pass) return;
+  const payload = await encrypt(pass, JSON.stringify(messages));
+  fetch('/api/sync',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({blob:payload})});
+}
+
+send.onclick = async () => {
+  const content = text.value.trim();
+  if(!content) return;
+  appendUser(content);
+  messages.push({role:'user', content});
+  text.value='';
+  const div=createAssistantDiv();
+  const res = await fetch('/api/chat', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({messages, privacyMode: privacy.checked})
+  });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer='';
+  let reply='';
+  let local=false; let sources=[]; let verified=false;
+  while(true){
+    const {done, value} = await reader.read();
+    if(done) break;
+    buffer += decoder.decode(value, {stream:true});
+    let parts = buffer.split('\n\n');
+    buffer = parts.pop();
+    for(const part of parts){
+      if(part.startsWith('event: done')){
+        const dataLine = part.split('\n').find(l=>l.startsWith('data: '));
+        if(dataLine){ const meta = JSON.parse(dataLine.slice(6)); local=meta.local; sources=meta.sources||[]; verified=meta.verified; }
+      } else if(part.startsWith('data: ')){
+        const token = part.slice(6);
+        reply += token + ' ';
+        div.textContent = reply;
+      }
+    }
+  }
+  div.textContent = (local? '🛡️ ':'🌐 ') + reply.trim();
+  if(sources.length){
+    const sup=document.createElement('sup');
+    sources.forEach((s,i)=>{ const a=document.createElement('a'); a.href=s.url; a.textContent='['+(i+1)+']'; a.target='_blank'; sup.appendChild(a); });
+    div.appendChild(sup);
+  }
+  if(verified) div.textContent += ' ✅';
+  messages.push({role:'assistant', content: reply.trim()});
+  chat.scrollTop=chat.scrollHeight;
+  sync();
+};
+</script>
+</body>
+</html>
