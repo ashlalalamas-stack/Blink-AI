@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import { config } from 'dotenv';
 import { routeChat } from './router.js';
+import { runPython } from './python.js';
 
 config();
 process.env.REGION = process.env.REGION || 'AU';
@@ -18,6 +19,13 @@ app.post('/api/chat', async (req, res) => {
   const offline = !!body?.offline;
   const result = await routeChat(messages, privacyMode || offline, req.log);
   return { reply: result.reply, local: result.local };
+});
+
+app.post('/api/python', async (req, res) => {
+  const body = req.body as any;
+  const code = typeof body?.code === 'string' ? body.code : '';
+  const result = await runPython(code);
+  return result;
 });
 
 if (process.env.NODE_ENV !== 'test') {
