@@ -4,51 +4,62 @@
 <meta charset="UTF-8" />
 <title>BLINK v0.1</title>
 <style>
- body { background:#111; color:#eee; font-family: sans-serif; display:flex; flex-direction:column; height:100vh; margin:0; }
- #chat { flex:1; padding:1rem; overflow-y:auto; }
- #input { display:flex; padding:1rem; gap:0.5rem; }
- textarea { flex:1; background:#222; color:#eee; border:1px solid #444; }
- button { background:#333; color:#eee; border:1px solid #555; }
- label { display:flex; align-items:center; gap:0.25rem; }
- .msg { margin-bottom:0.5rem; }
- .assistant { color:#aaffaa; }
+*{box-sizing:border-box}
+body{margin:0;background:#0e0e0e;color:#eee;font-family:system-ui,sans-serif;height:100vh;display:flex;flex-direction:column}
+#chat{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:.75rem}
+.msg{max-width:80%;padding:.5rem .75rem;border-radius:8px;line-height:1.4}
+.user{margin-left:auto;background:#1e1e1e}
+.assistant{background:#2a3a2a}
+#input{display:flex;padding:.75rem;gap:.5rem;background:#111}
+textarea{flex:1;background:#222;border:1px solid #444;color:#eee;border-radius:4px;padding:.5rem;resize:vertical}
+button{background:#2d6cdf;border:none;color:#fff;padding:0 1rem;border-radius:4px;cursor:pointer}
+button:hover{background:#1b4ea6}
+label{display:flex;align-items:center;gap:.25rem;color:#bbb}
 </style>
 </head>
 <body>
 <div id="chat"></div>
 <div id="input">
-<label><input type="checkbox" id="privacy"/> Privacy mode</label>
+<label><input type="checkbox" id="privacy"> Privacy</label>
 <textarea id="text" rows="2"></textarea>
 <button id="send">Send</button>
+<button id="runpy">Run Py</button>
 </div>
 <script>
-const chat = document.getElementById('chat');
-const text = document.getElementById('text');
-const send = document.getElementById('send');
-const privacy = document.getElementById('privacy');
-let messages = [];
-function append(role, content, local){
-  const div = document.createElement('div');
-  div.className = 'msg '+role;
-  const icon = local === undefined ? '' : (local ? '🛡️' : '🌐');
-  div.textContent = (role==='user'?'> ':icon+' ') + content;
+const chat=document.getElementById('chat');
+const text=document.getElementById('text');
+const send=document.getElementById('send');
+const runpy=document.getElementById('runpy');
+const privacy=document.getElementById('privacy');
+let messages=[];
+function append(role,content,local){
+  const div=document.createElement('div');
+  div.className='msg '+role;
+  const icon=local===undefined?'':(local?'\uD83D\uDEE1\uFE0F':'\uD83C\uDF10');
+  div.textContent=(role==='user'?'' : icon+' ')+content;
   chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+  chat.scrollTop=chat.scrollHeight;
 }
-send.onclick = async () => {
-  const content = text.value.trim();
-  if(!content) return;
-  append('user', content);
-  messages.push({role:'user', content});
+send.onclick=async()=>{
+  const content=text.value.trim();
+  if(!content)return;
+  append('user',content);
+  messages.push({role:'user',content});
   text.value='';
-  const res = await fetch('/api/chat', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({messages, privacyMode: privacy.checked})
-  });
-  const data = await res.json();
-  messages.push({role:'assistant', content:data.reply});
-  append('assistant', data.reply, data.local);
+  const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages,privacyMode:privacy.checked})});
+  const data=await res.json();
+  messages.push({role:'assistant',content:data.reply});
+  append('assistant',data.reply,data.local);
+};
+runpy.onclick=async()=>{
+  const code=text.value.trim();
+  if(!code)return;
+  append('user',code);
+  text.value='';
+  const res=await fetch('/api/python',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
+  const data=await res.json();
+  const out=(data.stdout||'')+(data.stderr||'');
+  append('assistant',out,true);
 };
 </script>
 </body>
